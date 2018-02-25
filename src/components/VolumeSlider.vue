@@ -2,7 +2,7 @@
 <div class="volume-slider-container active" v-bind:class="{ active: isActive }"  @mouseenter="volumeSliderHoverInHandler" @mouseleave="volumeSliderHoverOutHandler" >
     <button class="volume-button"><img :src="volumeIcon" /></button>
 
-    <div class="volume-slider" ref="volumeSlider" @click="volumeSliderClickHandler" @mousedown="dragSliderHandler">
+    <div class="volume-slider" ref="volumeSlider" @click="volumeSliderClickHandler" @mousedown="startDragSliderHandler" @mouseup="stopDragSliderHandler">
       <div class="volume-slider-control">
         <div class="volume-slider-progress" :style="{ width: `${volumeProgressPercentage}%` }">
           <div class="volume-slider-handler"></div>
@@ -21,9 +21,7 @@ export default {
     isActive: false,
     volumeProgressPercentage: 50
   }),
-  computed: {
-    validateVolume(volumePercentage) {}
-  },
+  computed: {},
   methods: {
     volumeSliderHoverInHandler() {
       console.log("volumeHoverIn");
@@ -41,21 +39,38 @@ export default {
         event,
         this.$refs.volumeSlider
       );
-      this.setVolumeSliderProgress(volumePercentage);
+      this.setVolumeSliderProgress(this.validateVolume(volumePercentage));
     },
     setVolumeSliderProgress(volumePercentage) {
       this.volumeProgressPercentage = volumePercentage;
       console.log("volumePercentage: ", volumePercentage);
     },
-    dragSliderHandler() {},
+    startDragSliderHandler() {
+      document.addEventListener("mousemove", this.sliderHandlerMoveHandler);
+      document.addEventListener("mouseup", this.stopDragSliderHandler);
+    },
+    stopDragSliderHandler() {
+      document.removeEventListener("mousemove", this.sliderHandlerMoveHandler);
+      document.removeEventListener("mouseup", this.stopDragSliderHandler);
+    },
+    sliderHandlerMoveHandler(event) {
+      const volumePercentage = this.getElementPercentage(
+        event,
+        this.$refs.volumeSlider
+      );
+      this.setVolumeSliderProgress(this.validateVolume(volumePercentage));
+    },
     getElementPercentage(event, element) {
       const rect = element.getBoundingClientRect();
-      // console.log("element: ", element);
-      // console.log("rect: ", rect);
-      // console.log("rect.left: ", rect.left);
-      // console.log("rect.width: ", rect.width);
-      // console.log("event.clientX: ", event.clientX);
       return (event.clientX - rect.left) / rect.width * 100;
+    },
+    validateVolume(volumePercentage) {
+      if (volumePercentage < 0) {
+        volumePercentage = 0;
+      } else if (volumePercentage > 100) {
+        volumePercentage = 100;
+      }
+      return volumePercentage;
     }
   }
 };
